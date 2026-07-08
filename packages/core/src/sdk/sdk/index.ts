@@ -18,6 +18,7 @@ import { decycle } from '@rsdoctor/core/common';
 
 export * from '../utils/openBrowser';
 export * from '../utils/base';
+export { resolveClientDiffHtmlPath } from '../server/client';
 
 const require = createRequire(import.meta.url);
 export class RsdoctorSDK<
