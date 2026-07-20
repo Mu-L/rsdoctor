@@ -5,7 +5,12 @@ export function isUndefined(value: unknown): value is undefined {
 
 // Replace lodash's isNumber function
 export function isNumber(value: unknown): value is number {
-  return typeof value === 'number' && !Number.isNaN(value);
+  return (
+    typeof value === 'number' ||
+    (typeof value === 'object' &&
+      value !== null &&
+      Object.prototype.toString.call(value) === '[object Number]')
+  );
 }
 
 export function isObject(value: unknown): value is Record<string, unknown> {
@@ -28,7 +33,7 @@ export function last<T>(array: T[]): T | undefined {
 
 // Replace lodash's compact function
 export function compact<T>(array: (T | null | undefined)[]): T[] {
-  return array.filter((item): item is T => item != null || !item); // Filter out null and undefined
+  return array.filter((item): item is T => Boolean(item));
 }
 
 // Replace lodash's isNil function

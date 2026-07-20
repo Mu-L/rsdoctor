@@ -1,44 +1,55 @@
 import { defineConfig } from '@rslib/core';
-import { dualPackageBundleless } from '../../scripts/rslib.base.config';
+import { esmConfig, pluginsConfig } from '../../scripts/rslib.base.config';
 
-const externals = ['buffer', 'es-toolkit', 'path-browserify', 'source-map'];
+const externals = [
+  '@rsdoctor/shared/collection',
+  'buffer',
+  'path-browserify',
+  'source-map',
+];
+
+const bundlelessEntries = {
+  index: ['src/**', '!src/common/collection.ts'],
+};
+
+const bundlelessLib = {
+  ...esmConfig,
+  bundle: false,
+  source: {
+    entry: bundlelessEntries,
+  },
+  output: {
+    ...esmConfig.output,
+    externals,
+  },
+  redirect: {
+    ...esmConfig.redirect,
+    dts: {
+      extension: true,
+      path: false,
+    },
+  },
+};
+
+const collectionLib = {
+  ...esmConfig,
+  source: {
+    entry: {
+      collection: './src/common/collection.ts',
+    },
+  },
+  output: {
+    ...esmConfig.output,
+    externals,
+  },
+  dts: {
+    bundle: {
+      bundledPackages: ['es-toolkit'],
+    },
+  },
+};
 
 export default defineConfig({
-  ...dualPackageBundleless,
-  lib: [
-    {
-      bundle: false,
-      format: 'esm',
-      syntax: 'es2021',
-      dts: {
-        build: true,
-      },
-      redirect: {
-        dts: {
-          extension: true,
-        },
-      },
-      output: {
-        filename: {
-          js: '[name].js',
-        },
-        externals,
-      },
-    },
-    {
-      bundle: false,
-      format: 'cjs',
-      syntax: 'es2021',
-      dts: {
-        build: true,
-        autoExtension: true,
-      },
-      output: {
-        filename: {
-          js: '[name].cjs',
-        },
-        externals,
-      },
-    },
-  ],
+  lib: [bundlelessLib, collectionLib],
+  plugins: pluginsConfig,
 });
