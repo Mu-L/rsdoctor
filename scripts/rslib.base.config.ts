@@ -66,11 +66,6 @@ export const esmConfig: LibConfig = {
   dts: {
     build: true,
   },
-  redirect: {
-    dts: {
-      extension: true,
-    },
-  },
   output: {
     minify: nodeMinifyConfig,
     filename: {
