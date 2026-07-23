@@ -18,7 +18,7 @@ import {
   FullscreenExitOutlined,
 } from '@ant-design/icons';
 import type { ComposeOption, EChartsType } from 'echarts/core';
-import { formatSize, useThemeToken } from 'src/utils';
+import { formatSize, usePersistedState, useThemeToken } from 'src/utils';
 import { SDK } from '@rsdoctor/shared/types';
 import { ServerAPIProvider } from 'src/components/Manifest';
 import { ModuleAnalyzeComponent } from '../../pages/ModuleAnalyze';
@@ -556,18 +556,9 @@ export const TreeMap: React.FC<TreeMapProps> = memo(
     }, []);
 
     return option ? (
-      <div className={Styles['chart-container']}>
-        <Alert
-          message="If parsed size lacks detailed module information, you can enable sourceMap when RSDOCTOR = true. This is because Rsdoctor relies on SourceMap to obtain Parsed Size. Rspack provides SourceMap information to Rsdoctor by default without affecting the build output."
-          type="info"
-          showIcon
-          style={{ marginBottom: 0 }}
-        />
-        <div
-          style={{
-            flex: 1,
-          }}
-        >
+      <div className={Styles.mainArea}>
+        <TreemapAlert />
+        <div className={Styles.chartRoot}>
           <EChartsReactCore
             ref={chartRef}
             option={option}
@@ -605,6 +596,9 @@ export const TreeMap: React.FC<TreeMapProps> = memo(
             style={{
               width: '100%',
               height: '100%',
+              position: 'absolute',
+              left: 0,
+              top: 0,
             }}
           />
         </div>
@@ -612,6 +606,23 @@ export const TreeMap: React.FC<TreeMapProps> = memo(
     ) : null;
   },
 );
+
+const TreemapAlert = () => {
+  const [visible, setVisible] = usePersistedState(
+    'treemap-alert-visible',
+    true,
+  );
+  if (!visible) return null;
+  return (
+    <Alert
+      closable
+      onClose={() => setVisible(false)}
+      message="If parsed size lacks detailed module information, you can enable sourceMap when RSDOCTOR = true. This is because Rsdoctor relies on SourceMap to obtain Parsed Size. Rspack provides SourceMap information to Rsdoctor by default without affecting the build output."
+      type="info"
+      showIcon
+    />
+  );
+};
 
 export const AssetTreemapWithFilter: React.FC<{
   treeData: TreeNode[];
@@ -995,33 +1006,27 @@ const AssetTreemapWithFilterInner: React.FC<{
           </div>
         </div>
       </div>
-
-      <div className={Styles['chart-wrapper']}>
-        <TreeMap
-          treeData={filteredTreeData}
-          sizeType={sizeType}
-          onChartClick={handleChartClick}
-          highlightNodeId={highlightNodeId}
-          centerNodeId={centerNodeId}
-          rootPath={rootPath}
-        />
-        {moduleId ? (
-          <ServerAPIProvider
-            api={SDK.ServerAPI.API.GetAllModuleGraph}
-            body={{}}
-          >
-            {(modules) => (
-              <ModuleAnalyzeComponent
-                cwd={rootPath}
-                moduleId={moduleId}
-                modules={modules}
-                show={showAnalyze}
-                setShow={setShowAnalyze}
-              />
-            )}
-          </ServerAPIProvider>
-        ) : null}
-      </div>
+      <TreeMap
+        treeData={filteredTreeData}
+        sizeType={sizeType}
+        onChartClick={handleChartClick}
+        highlightNodeId={highlightNodeId}
+        centerNodeId={centerNodeId}
+        rootPath={rootPath}
+      />
+      {moduleId ? (
+        <ServerAPIProvider api={SDK.ServerAPI.API.GetAllModuleGraph} body={{}}>
+          {(modules) => (
+            <ModuleAnalyzeComponent
+              cwd={rootPath}
+              moduleId={moduleId}
+              modules={modules}
+              show={showAnalyze}
+              setShow={setShowAnalyze}
+            />
+          )}
+        </ServerAPIProvider>
+      ) : null}
     </div>
   );
 };

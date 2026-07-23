@@ -1,5 +1,5 @@
 /* rslint-disable react/jsx-key */
-import React, { useState, useMemo } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { Divider, Segmented, Avatar, Tree } from 'antd';
 import { Client, SDK } from '@rsdoctor/shared/types';
 import { RightOutlined, FileFilled, GoldenFilled } from '@ant-design/icons';
@@ -109,7 +109,7 @@ export const BundleCards: React.FC<{
   cwd: string;
   errors: SDK.ErrorsData;
   summary: SDK.ServerAPI.InferResponseType<SDK.ServerAPI.API.GetAssetsSummary>;
-}> = ({ errors, summary }) => {
+}> = memo(({ errors, summary }) => {
   const duplicatePackages = useDuplicatePackagesByErrors(errors);
   const [totalSize, totalSizeUnit] = formatSize(summary.all.total.size).split(
     ' ',
@@ -288,4 +288,4 @@ export const BundleCards: React.FC<{
       }}
     </ServerAPIProvider>
   );
-};
+});

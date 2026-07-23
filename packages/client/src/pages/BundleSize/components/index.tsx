@@ -17,7 +17,7 @@ import {
   Typography,
   Tabs,
 } from 'antd';
-import React, { useId } from 'react';
+import React, { memo, useId } from 'react';
 import { ServerAPIProvider } from '../../../components/Manifest';
 import { useProjectInfo } from '../../../components/Layout/project-info-context';
 import {
@@ -50,6 +50,10 @@ export const WebpackModulesOverallBase: React.FC<
     'bundle-size-tabs-card-expanded',
     false,
   );
+  const [activeTab, setActiveTab] = usePersistedState(
+    'bundle-size-tabs-default-tab',
+    'tree',
+  );
   const cardDomId = useId();
   const expandActionText = expanded ? 'Shrink card' : 'Expand card';
   const { isLight } = useTheme();
@@ -66,6 +70,8 @@ export const WebpackModulesOverallBase: React.FC<
         id={cardDomId}
       >
         <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
           size="middle"
           className={styles.tabsRoot}
           tabBarExtraContent={{
@@ -223,59 +229,7 @@ export const WebpackModulesOverallBase: React.FC<
             {
               key: 'treemap',
               label: 'Treemap',
-              children: (
-                <ServerAPIProvider api={SDK.ServerAPI.API.GetProjectInfo}>
-                  {(data) => {
-                    const { isRspack, hasSourceMap } =
-                      Rspack.checkSourceMapSupport(data.configs);
-                    return (
-                      <ServerAPIProvider
-                        api={SDK.ServerAPI.API.GetSummaryBundles}
-                      >
-                        {(data) => {
-                          // Filter assets to only show JS (js, cjs, mjs), .bundle, CSS, and HTML files
-                          const isVisibleTreemapAsset = (filePath: string) => {
-                            const ext =
-                              filePath.toLowerCase().split('.').pop() || '';
-                            return (
-                              isJavaScriptAsset(filePath) ||
-                              ext === 'css' ||
-                              ext === 'html'
-                            );
-                          };
-
-                          const computedTreeData: TreeNode[] = data
-                            .filter((item) =>
-                              isVisibleTreemapAsset(item.asset.path),
-                            )
-                            .map((item) => {
-                              const moduleTree = flattenTreemapData(
-                                item.modules,
-                              );
-                              const hasModules = item.modules.length > 0;
-                              return {
-                                name: item.asset.path,
-                                sourceSize: hasModules
-                                  ? (moduleTree.sourceSize ?? 0)
-                                  : item.asset.size,
-                                bundledSize: item.asset.size,
-                                gzipSize: item.asset.gzipSize ?? 0,
-                                children: moduleTree.children,
-                              };
-                            });
-
-                          return (
-                            <AssetTreemapWithFilter
-                              treeData={computedTreeData}
-                              bundledSize={hasSourceMap || isRspack}
-                            />
-                          );
-                        }}
-                      </ServerAPIProvider>
-                    );
-                  }}
-                </ServerAPIProvider>
-              ),
+              children: <AssetTreemapWithFilterAndData />,
             },
           ]}
           defaultActiveKey="tree"
@@ -284,6 +238,54 @@ export const WebpackModulesOverallBase: React.FC<
     </>
   );
 };
+
+const AssetTreemapWithFilterAndData = memo(() => {
+  return (
+    <ServerAPIProvider api={SDK.ServerAPI.API.GetProjectInfo}>
+      {(data) => {
+        const { isRspack, hasSourceMap } = Rspack.checkSourceMapSupport(
+          data.configs,
+        );
+        return (
+          <ServerAPIProvider api={SDK.ServerAPI.API.GetSummaryBundles}>
+            {(data) => {
+              // Filter assets to only show JS (js, cjs, mjs), .bundle, CSS, and HTML files
+              const isVisibleTreemapAsset = (filePath: string) => {
+                const ext = filePath.toLowerCase().split('.').pop() || '';
+                return (
+                  isJavaScriptAsset(filePath) || ext === 'css' || ext === 'html'
+                );
+              };
+
+              const computedTreeData: TreeNode[] = data
+                .filter((item) => isVisibleTreemapAsset(item.asset.path))
+                .map((item) => {
+                  const moduleTree = flattenTreemapData(item.modules);
+                  const hasModules = item.modules.length > 0;
+                  return {
+                    name: item.asset.path,
+                    sourceSize: hasModules
+                      ? (moduleTree.sourceSize ?? 0)
+                      : item.asset.size,
+                    bundledSize: item.asset.size,
+                    gzipSize: item.asset.gzipSize ?? 0,
+                    children: moduleTree.children,
+                  };
+                });
+
+              return (
+                <AssetTreemapWithFilter
+                  treeData={computedTreeData}
+                  bundledSize={hasSourceMap || isRspack}
+                />
+              );
+            }}
+          </ServerAPIProvider>
+        );
+      }}
+    </ServerAPIProvider>
+  );
+});
 
 export const WebpackModulesOverall: React.FC = () => {
   const { project } = useProjectInfo();
